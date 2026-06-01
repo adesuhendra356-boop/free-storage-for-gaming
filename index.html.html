@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud App Vault & Integrasi DANA Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+        .dana-gradient { background: linear-gradient(135deg, #108ee9 0%, #0077e6 100%); }
+        .glass { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+                <i class="fab fa-google text-blue-500"></i> Cloud App Vault
+            </h1>
+            <p class="text-gray-400 text-sm mt-1">Simpan dan managemen aplikasi langsung ke Google Drive Anda.</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <button id="btn-google-auth" onclick="handleAuthClick()" class="px-4 py-2.5 bg-white text-gray-900 rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-gray-100 transition shadow-lg">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" class="w-4 h-4" alt="Google">
+                <span id="auth-status">Hubungkan Google Drive</span>
+            </button>
+            <div id="license-badge" class="px-4 py-2.5 rounded-xl text-sm font-bold bg-gray-800 text-gray-400 border border-gray-700 flex items-center gap-2">
+                <i class="fas fa-id-badge"></i> Status: <span id="status-text">FREE VERSION (Max 3)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-1 space-y-6">
+            <div class="glass p-6 rounded-2xl shadow-xl">
+                <h2 class="text-xl font-semibold mb-4 text-white flex items-center gap-2">
+                    <i class="fas fa-plus-circle text-blue-400"></i> Tambah Aplikasi
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 uppercase mb-2">Nama Aplikasi</label>
+                        <input type="text" id="app-name" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" placeholder="Contoh: WhatsApp Plus">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 uppercase mb-2">URL / Link Aplikasi</label>
+                        <input type="url" id="app-url" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition" placeholder="https://example.com/download">
+                    </div>
+                    <button onclick="addNewApp()" class="w-full dana-gradient text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-blue-500/20 hover:opacity-90 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-cloud-upload-alt"></i> Simpan ke Cloud
+                    </button>
+                </div>
+            </div>
+
+            <div id="upgrade-card" class="dana-gradient p-6 rounded-2xl shadow-xl text-white relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-8 opacity-10 text-9xl">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <h2 class="text-xl font-bold mb-2 flex items-center gap-2">
+                    <i class="fas fa-crown text-yellow-300 animate-bounce"></i> Upgrade ke PRO
+                </h2>
+                <p class="text-sm opacity-90 mb-4">Slot aplikasi saat ini penuh (Limit 3). Upgrade via DANA untuk menambahkan aplikasi tanpa batas.</p>
+                
+                <div class="space-y-3">
+                    <button onclick="openDanaPayment(10000, 'Bulanan')" class="w-full bg-white text-blue-600 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-gray-50 transition text-left flex justify-between items-center">
+                        <span><i class="fas fa-calendar-alt mr-2"></i> Paket Bulanan</span>
+                        <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-xs">Rp 10.000 / bln</span>
+                    </button>
+                    <button onclick="openDanaPayment(40000, 'Selamanya')" class="w-full bg-yellow-400 text-gray-900 font-bold py-3 px-4 rounded-xl shadow-md hover:bg-yellow-300 transition text-left flex justify-between items-center">
+                        <span><i class="fas fa-infinity mr-2"></i> Paket Forever</span>
+                        <span class="bg-gray-900 text-white px-3 py-1 rounded-lg text-xs">Rp 40.000 Sekali</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-6">
+            <div class="glass p-6 rounded-2xl shadow-xl min-h-[400px]">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-th-large text-emerald-400"></i> Daftar Aplikasi Anda (<span id="app-count">0</span>)
+                    </h2>
+                    <span id="storage-indicator" class="text-xs font-semibold px-3 py-1 rounded-full bg-gray-800 text-gray-400 border border-gray-700">
+                        Slot Terpakai: <span id="slot-ratio">0/3</span>
+                    </span>
+                </div>
+
+                <div id="apps-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    </div>
+
+                <div id="empty-state" class="flex flex-col items-center justify-center py-20 text-gray-500">
+                    <i class="fas fa-folder-open text-5xl mb-4"></i>
+                    <p>Belum ada aplikasi yang tersimpan di cloud.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dana-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden justify-center items-center p-4 z-50">
+        <div class="bg-white text-gray-800 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl transform scale-95 transition-all">
+            <div class="bg-[#108ee9] p-6 text-white text-center relative">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_danain.png" class="h-8 mx-auto filter brightness-0 invert" alt="DANA Logo">
+                <p class="text-xs opacity-80 mt-1">Secure Checkout via DANA API</p>
+                <button onclick="closeDanaModal()" class="absolute right-4 top-4 text-white/80 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Metode Pembayaran</p>
+                        <p class="text-sm font-bold text-gray-700" id="modal-package-name">Upgrade Pro Bulanan</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Tagihan</p>
+                        <p class="text-xl font-extrabold text-[#108ee9]" id="modal-amount">Rp 10.000</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center justify-center py-2 bg-white border border-dashed border-gray-200 rounded-2xl">
+                    <p class="text-xs text-gray-500 mb-2 font-medium"><i class="fas fa-qrcode mr-1"></i> Scan QRIS DANA untuk Membayar</p>
+                    <div class="w-44 h-44 bg-gray-100 rounded-xl p-2 flex items-center justify-center border border-gray-200 relative">
+                        <div class="absolute inset-0 flex items-center justify-center bg-white/90" id="qr-loading">
+                            <i class="fas fa-circle-notch animate-spin text-2xl text-blue-500"></i>
+                        </div>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=DANA_PRO_UPGRADE" class="w-full h-full" alt="QRIS">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nomor Terdaftar DANA</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-3.5 text-gray-400 font-semibold">+62</span>
+                        <input type="number" id="dana-phone" class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-14 pr-4 py-3 text-gray-800 font-semibold tracking-wide focus:outline-none focus:border-blue-500 transition" placeholder="8xxxxxxxxxx">
+                    </div>
+                </div>
+
+                <button onclick="processPayment()" id="btn-pay" class="w-full bg-[#108ee9] text-white font-bold py-4 px-4 rounded-xl shadow-lg shadow-blue-500/30 hover:bg-[#0077e6] transition flex items-center justify-center gap-2">
+                    <i class="fas fa-shield-alt"></i> Bayar Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION GOOGLE DRIVE API & PICKER
+        // Silakan isi Client ID & API Key milik Anda dari Google Cloud Console
+        const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+        const API_KEY = 'YOUR_GOOGLE_API_KEY';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+        let tokenClient;
+        let accessToken = null;
+        
+        // APP CONFIG STATE
+        let isPro = false;
+        let activePackage = 'Free';
+        let appList = [];
+        let pendingPackage = null;
+        let pendingPrice = 0;
+
+        // LOAD DATA AWAL DARI LOCAL STORAGE JIKA ADA (SEBAGAI CACHE STRUKTUR DATA UTAMA KLIEN)
+        window.addEventListener('DOMContentLoaded', () => {
+            if(localStorage.getItem('vault_pro') === 'true') {
+                activateProState(localStorage.getItem('vault_package') || 'Selamanya');
+            }
+            loadStoredApps();
+            setTimeout(() => document.getElementById('qr-loading').classList.add('hidden'), 1500);
+        });
+
+        // AUTHENTICATION GOOGLE IDENTITY SERVICE
+        function handleAuthClick() {
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: (tokenResponse) => {
+                        if (tokenResponse && tokenResponse.access_token) {
+                            accessToken = tokenResponse.access_token;
+                            document.getElementById('auth-status').innerText = "Google Terhubung";
+                            document.getElementById('btn-google-auth').classList.replace('bg-white', 'bg-emerald-600');
+                            document.getElementById('btn-google-auth').classList.add('text-white');
+                            saveToGoogleCloud(); // Sync ke cloud drive jika terhubung
+                        }
+                    },
+                });
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } catch (err) {
+                // Mock jika credentials belum diisi lengkap agar visual web tidak patah/eror
+                alert("Simulasi Google Drive Auth Berhasil (Isi CLIENT_ID untuk API Real).");
+                accessToken = "mock_token_12345";
+                document.getElementById('auth-status').innerText = "Google Terhubung (Sim)";
+                document.getElementById('btn-google-auth').className = "px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm flex items-center gap-2 transition shadow-lg";
+            }
+        }
+
+        // CONTROL APPS ADDITION WITH VALIDATION LIMIT
+        function addNewApp() {
+            const nameInput = document.getElementById('app-name');
+            const urlInput = document.getElementById('app-url');
+
+            if(!nameInput.value || !urlInput.value) {
+                alert('Tolong isi nama dan link aplikasi secara valid!');
+                return;
+            }
+
+            // Validasi Limit jika bukan Pro
+            if(!isPro && appList.length >= 3) {
+                alert('Batas versi GRATIS tercapai! Anda tidak bisa menambahkan lebih dari 3 aplikasi. Silakan upgrade ke PRO dengan DANA.');
+                document.getElementById('upgrade-card').classList.add('animate-pulse');
+                setTimeout(() => document.getElementById('upgrade-card').classList.remove('animate-pulse'), 2000);
+                return;
+            }
+
+            const appData = {
+                id: Date.now(),
+                name: nameInput.value,
+                url: urlInput.value,
+                date: new Date().toLocaleDateString('id-ID')
+            };
+
+            appList.push(appData);
+            nameInput.value = '';
+            urlInput.value = '';
+            
+            renderApps();
+            saveToGoogleCloud();
+        }
+
+        // DELETION LOGIC
+        function deleteApp(id) {
+            appList = appList.filter(app => app.id !== id);
+            renderApps();
+            saveToGoogleCloud();
+        }
+
+        // RENDERING COMPONENT
+        function renderApps() {
+            const container = document.getElementById('apps-container');
+            const emptyState = document.getElementById('empty-state');
+            const countEl = document.getElementById('app-count');
+            const ratioEl = document.getElementById('slot-ratio');
+
+            countEl.innerText = appList.length;
+            ratioEl.innerText = isPro ? `${appList.length}/Unlimited` : `${appList.length}/3`;
+
+            if(appList.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = appList.map(app => `
+                <div class="glass bg-gray-900/40 p-4 rounded-xl border border-gray-800 flex justify-between items-center group hover:border-gray-700 transition">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                            <i class="fas fa-cubes text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white">${app.name}</h3>
+                            <p class="text-xs text-gray-400">${app.date}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="${app.url}" target="_blank" class="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition" title="Buka Link">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                        <button onclick="deleteApp(${app.id})" class="p-2 text-rose-400 hover:bg-rose-500/10 rounded-lg transition" title="Hapus">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // SAVE & BACKEND INTEGRATION TO GOOGLE DRIVE API
+        function saveToGoogleCloud() {
+            localStorage.setItem('cached_apps', JSON.stringify(appList));
+            
+            if (!accessToken) return; // Jika belum log-in cloud, data sementara di local cache.
+
+            // Simulasi POST JSON data stream ke Google Drive file appdata.json
+            console.log("Syncing to Google Cloud storage file metadata structure...", appList);
+            // Real API call menggunakan fetch() endpoint drive v3 files dapat dipasang disini dengan header authorization Bearer token.
+        }
+
+        function loadStoredApps() {
+            const cached = localStorage.getItem('cached_apps');
+            if(cached) {
+                appList = JSON.parse(cached);
+                renderApps();
+            }
+        }
+
+        // DANA SYSTEM FLOW
+        function openDanaPayment(amount, type) {
+            pendingPrice = amount;
+            pendingPackage = type;
+            
+            document.getElementById('modal-package-name').innerText = `Upgrade Pro (Paket ${type})`;
+            document.getElementById('modal-amount').innerText = `Rp ${amount.toLocaleString('id-ID')}`;
+            document.getElementById('dana-modal').style.display = 'flex';
+        }
+
+        function closeDanaModal() {
+            document.getElementById('dana-modal').style.display = 'none';
+        }
+
+        function processPayment() {
+            const phone = document.getElementById('dana-phone').value;
+            if(!phone || phone.length < 9) {
+                alert("Masukkan nomor akun DANA Anda dengan benar!");
+                return;
+            }
+
+            const btnPay = document.getElementById('btn-pay');
+            btnPay.disabled = true;
+            btnPay.innerHTML = `<i class="fas fa-spinner animate-spin"></i> Menghubungkan API Dana...`;
+
+            // Simulasi response handshake endpoint API gateway Dana 
+            setTimeout(() => {
+                alert(`Pembayaran Berhasil via Dana senilai Rp ${pendingPrice.toLocaleString('id-ID')}! Status lisensi Anda telah di-upgrade ke PRO.`);
+                activateProState(pendingPackage);
+                closeDanaModal();
+                
+                // reset button status
+                btnPay.disabled = false;
+                btnPay.innerHTML = `<i class="fas fa-shield-alt"></i> Bayar Sekarang`;
+            }, 2500);
+        }
+
+        function activateProState(packType) {
+            isPro = true;
+            activePackage = packType;
+            
+            localStorage.setItem('vault_pro', 'true');
+            localStorage.setItem('vault_package', packType);
+
+            // Perubahan UI global setelah upgrade
+            document.getElementById('status-text').innerText = `PRO (${packType.toUpperCase()})`;
+            document.getElementById('license-badge').className = "px-4 py-2.5 rounded-xl text-sm font-bold bg-yellow-500 text-gray-900 flex items-center gap-2 animate-bounce";
+            document.getElementById('upgrade-card').innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle text-5xl text-white mb-2"></i>
+                    <h3 class="text-xl font-bold">Fitur Pro Aktif</h3>
+                    <p class="text-xs text-blue-100 mt-1">Anda sekarang dapat memasukkan aplikasi tanpa batasan slot penyimpanan cloud.</p>
+                </div>
+            `;
+            renderApps();
+        }
+    </script>
+</body>
+</html>
